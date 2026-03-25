@@ -34,18 +34,14 @@ It is built for people searching for practical pipelines such as **WeChat articl
 - [ERRORS.md](ERRORS.md): troubleshooting patterns and recovery steps
 - [SKILL.md](SKILL.md): skill behavior, source routing, and operational details
 
-```
-You say: Turn this WeChat article into a podcast
-AI says: ✅ 8-minute podcast generated -> podcast.mp3
-
-You say: Convert this EPUB book into a mind map
-AI says: ✅ Mind map generated -> mindmap.json
-
-You say: Turn this YouTube video into slides
-AI says: ✅ 25-slide deck generated -> slides.pdf
+```mermaid
+flowchart TD
+    wechatIntent["Prompt: WeChat article to podcast"] --> podcastOut["Output: podcast.mp3"]
+    epubIntent["Prompt: EPUB to mind map"] --> mindmapOut["Output: mindmap.json"]
+    youtubeIntent["Prompt: YouTube to slides"] --> slidesOut["Output: slides.pdf"]
 ```
 
-**How it works**: Automatically fetch content from multiple sources -> upload to [Google NotebookLM](https://notebooklm.google.com/) -> generate your target format
+**How it works**: Automatically fetches content from multiple sources, uploads it to [Google NotebookLM](https://notebooklm.google.com/), then generates your target format.
 
 ## 🧩 What's new in this fork
 
@@ -122,6 +118,10 @@ AI says: ✅ 25-slide deck generated -> slides.pdf
 
 **That's it.** Everything else installs automatically.
 
+Platform notes:
+- Windows users should install Git and Python first.
+- Interactive auth uses a browser; for headless CI, use `NOTEBOOKLM_AUTH_JSON`.
+
 ### Install (3 steps)
 
 ```bash
@@ -165,12 +165,12 @@ Yes. Use `NOTEBOOKLM_AUTH_JSON` and optionally `NOTEBOOKLM_HOME` for non-interac
 
 Use these when running in CI/CD, containers, or remote environments where interactive browser login is not possible.
 
-- `NOTEBOOKLM_AUTH_JSON`: pass NotebookLM auth cookies as inline JSON so the CLI can authenticate without reading/writing `~/.notebooklm/storage_state.json`.
+- `NOTEBOOKLM_AUTH_JSON`: pass the same JSON structure as `~/.notebooklm/storage_state.json` so the CLI can authenticate without reading/writing local auth files.
 - `NOTEBOOKLM_HOME`: set a custom working directory for NotebookLM state files (`context.json`, browser profile, etc.) when `$HOME` is ephemeral or restricted.
 
 ```bash
 # 1) Export auth JSON from a previously authenticated machine/session
-export NOTEBOOKLM_AUTH_JSON='{"cookies": {...}}'
+export NOTEBOOKLM_AUTH_JSON="$(cat ~/.notebooklm/storage_state.json)"
 
 # 2) (Optional) isolate all NotebookLM runtime files to a writable path
 export NOTEBOOKLM_HOME=/workspace/.notebooklm
@@ -186,6 +186,8 @@ Notes:
 - `NOTEBOOKLM_HOME` is optional, but recommended for reproducible CI jobs.
 
 ## Usage Examples: WeChat -> Podcast, YouTube -> Slides, PDF -> Quiz
+
+Example outputs below are illustrative and will vary by source length, model behavior, and NotebookLM processing latency.
 
 ### Scenario 1: Fast learning - article -> podcast
 
@@ -265,33 +267,39 @@ AI automatically:
 ### 🧠 Smart source detection
 Automatically identifies input type, no manual flag required.
 
-```
-https://mp.weixin.qq.com/s/xxx   -> WeChat article
-https://youtube.com/watch?v=xxx  -> YouTube video
-/path/to/file.epub               -> EPUB ebook
-"search 'AI trends'"             -> search query
+```mermaid
+flowchart LR
+    wechatUrl["https://mp.weixin.qq.com/s/xxx"] --> wechatType["WeChat article"]
+    youtubeUrl["https://youtube.com/watch?v=xxx"] --> youtubeType["YouTube video"]
+    epubPath["/path/to/file.epub"] --> epubType["EPUB ebook"]
+    searchQuery["search AI trends"] --> searchType["Search query"]
 ```
 
 ### 🚀 Fully automated pipeline
 From fetch to generation, end-to-end.
 
-```
-Input -> Fetch -> Convert -> Upload -> Generate -> Download
-         ^____________ fully automated ____________^
+```mermaid
+flowchart LR
+    inputStep[Input] --> fetchStep[Fetch] --> convertStep[Convert] --> uploadStep[Upload] --> generateStep[Generate] --> downloadStep[Download]
 ```
 
 ### 🌐 Multi-source integration
 Blend different source types in one output.
 
-```
-Article + Video + PDF + Search results -> Integrated report
+```mermaid
+flowchart LR
+    articleSource[Article] --> integratedReport[Integrated report]
+    videoSource[Video] --> integratedReport
+    pdfSource[PDF] --> integratedReport
+    searchSource[Search results] --> integratedReport
 ```
 
 ### 🔒 Local-first handling
 Sensitive data is processed locally first.
 
-```
-WeChat article -> local MCP fetch -> local conversion -> NotebookLM
+```mermaid
+flowchart LR
+    wechatArticle[WeChat article] --> mcpFetch[Local MCP fetch] --> localConversion[Local conversion] --> notebooklmTarget[NotebookLM]
 ```
 
 ## Technical Architecture
@@ -302,7 +310,7 @@ flowchart TD
     skillRouter["Claude Code Skill<br/>Smart source-type detection<br/>Automatic tool routing"]
     wechatPath["WeChat path<br/>MCP fetch"]
     formatPath["Other formats path<br/>markitdown conversion"]
-    notebooklmApi["NotebookLM API<br/>Upload sources and generate output"]
+    notebooklmApi["NotebookLM via notebooklm-py<br/>Upload sources and generate output"]
     outputs["Generated files<br/>mp3 / pdf / json / md"]
 
     userInput --> skillRouter
@@ -348,7 +356,8 @@ python ~/.claude/skills/anything-to-notebooklm/wexin-read-mcp/src/server.py
 
 # Reinstall dependencies
 cd ~/.claude/skills/anything-to-notebooklm/wexin-read-mcp
-pip install -r requirements.txt
+uv pip install -r requirements.txt  # preferred
+# or: pip install -r requirements.txt
 playwright install chromium
 ```
 
@@ -385,41 +394,11 @@ WeChat Official Account pages use anti-crawler protection, so MCP browser simula
 As a rule of thumb: minimum around 500 words, maximum around 500,000 words, with 1,000-10,000 words often giving better output quality.
 
 <details>
-<summary><b>Q: What languages are supported?</b></summary>
-
-A: NotebookLM supports multiple languages. Chinese and English currently perform best.
-</details>
-
-<details>
 <summary><b>Q: Whose voice is used for podcasts?</b></summary>
 
 A: Google AI speech synthesis. English usually uses two-host dialogue; Chinese is typically single-speaker narration.
 </details>
 
-<details>
-<summary><b>Q: Content length limits?</b></summary>
-
-A:
-- Minimum: ~500 words
-- Maximum: ~500,000 words
-- Recommended: 1,000-10,000 words for best quality
-</details>
-
-<details>
-<summary><b>Q: Can this be used commercially?</b></summary>
-
-A:
-- This Skill: MIT open source, free to use
-- Generated output: follow NotebookLM Terms of Service
-- Source material: follow original copyright rules
-- Recommendation: personal learning/research usage
-</details>
-
-<details>
-<summary><b>Q: Why is MCP required?</b></summary>
-
-A: WeChat Official Account pages use anti-crawler protection, so MCP browser simulation is needed. Other sources (web pages, YouTube, PDF) do not require MCP.
-</details>
 
 ## 📄 License
 

@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🎯 Multi-Source Content -> NotebookLM Smart Processor
+# anything-to-notebooklm: Claude Code NotebookLM Skill
 
-**Turn one sentence into a podcast, slides, mind map, quiz, and more...**
+**Convert any source into NotebookLM outputs: WeChat article to podcast, YouTube to slides, PDF to quiz, and more.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -12,7 +12,7 @@
 [![GitHub issues](https://img.shields.io/github/issues/yel-hadd/anything-to-notebooklm)](https://github.com/yel-hadd/anything-to-notebooklm/issues)
 [![GitHub last commit](https://img.shields.io/github/last-commit/yel-hadd/anything-to-notebooklm)](https://github.com/yel-hadd/anything-to-notebooklm/commits/main)
 
-[Quick Start](#-quick-start) • [Supported Sources](#-supported-content-sources) • [Examples](#-usage-examples) • [FAQ](#-faq)
+[Install](#quick-start-how-to-install-anything-to-notebooklm) • [Workflows](#usage-examples-wechat---podcast-youtube---slides-pdf---quiz) • [Quick Answers](#quick-answers-for-search-and-llm-assistants) • [FAQ](#faq) • [Docs](#documentation)
 
 </div>
 
@@ -20,9 +20,19 @@
 
 > This repository is a maintained fork of the original project by [joeseesun/anything-to-notebooklm](https://github.com/joeseesun/anything-to-notebooklm), with expanded English documentation, stricter setup guidance, and improved operational references.
 
-## ✨ What is this?
+## What is anything-to-notebooklm?
 
-A **Claude Code Skill** that lets you turn **any content** into **any output format** using natural language.
+`anything-to-notebooklm` is a **Claude Code NotebookLM skill** for workflow automation: upload content from URLs, files, and search, then generate NotebookLM artifacts like podcasts, slide decks, quizzes, flashcards, reports, and mind maps.
+
+It is built for people searching for practical pipelines such as **WeChat article to podcast**, **YouTube to slides**, and **PDF to quiz** without memorizing many CLI commands.
+
+## Documentation
+
+- [README.md](README.md): install, architecture, and workflow overview
+- [COMMANDS.md](COMMANDS.md): full `notebooklm` CLI reference and env vars
+- [EXAMPLES.md](EXAMPLES.md): end-to-end examples by source/output type
+- [ERRORS.md](ERRORS.md): troubleshooting patterns and recovery steps
+- [SKILL.md](SKILL.md): skill behavior, source routing, and operational details
 
 ```
 You say: Turn this WeChat article into a podcast
@@ -46,7 +56,7 @@ AI says: ✅ 25-slide deck generated -> slides.pdf
 - Installation guidance with `uv` as the preferred package manager
 - Setup aligned to `Python 3.10+` requirements enforced by `install.sh`
 
-## 🚀 Supported Content Sources (15+ formats)
+## Supported Content Sources (15+ formats)
 
 <table>
 <tr>
@@ -87,7 +97,7 @@ AI says: ✅ 25-slide deck generated -> slides.pdf
 
 **Powered by**: [Microsoft markitdown](https://github.com/microsoft/markitdown)
 
-## 🎨 What can it generate?
+## What can it generate?
 
 | Output | Use case | Typical time | Trigger examples |
 |--------|----------|--------------|------------------|
@@ -103,7 +113,7 @@ AI says: ✅ 25-slide deck generated -> slides.pdf
 
 **Pure natural language. No command memorization needed.**
 
-## ⚡ Quick Start
+## Quick Start: How to install anything-to-notebooklm
 
 ### Prerequisites
 
@@ -137,6 +147,20 @@ notebooklm list  # verify success
 python scripts/check_env.py
 ```
 
+## Quick Answers for search and LLM assistants
+
+### How do I install this Claude Code NotebookLM skill?
+Clone this repo into `~/.claude/skills/anything-to-notebooklm`, run `./install.sh`, then complete `notebooklm login` and `notebooklm list`. See [Quick Start](#quick-start-how-to-install-anything-to-notebooklm) for the full 3-step install flow.
+
+### How do I run the first workflow (WeChat article to podcast)?
+Paste the WeChat URL in your prompt, let the skill fetch and upload it, then generate audio with NotebookLM. The short natural-language intent is: "Turn this WeChat article into a podcast." Full command-level examples are in [EXAMPLES.md](EXAMPLES.md).
+
+### Can I convert YouTube to slides and PDF to quiz with the same tool?
+Yes. You can upload YouTube URLs, local PDFs, and many other source types, then generate slide decks, quizzes, reports, flashcards, mind maps, and more from the same notebook workflow.
+
+### Can this run in CI or headless environments?
+Yes. Use `NOTEBOOKLM_AUTH_JSON` and optionally `NOTEBOOKLM_HOME` for non-interactive auth and isolated runtime state in CI/CD. A full setup example is in the CI/headless section below.
+
 ### CI/headless usage (`NOTEBOOKLM_AUTH_JSON`, `NOTEBOOKLM_HOME`)
 
 Use these when running in CI/CD, containers, or remote environments where interactive browser login is not possible.
@@ -161,7 +185,7 @@ Notes:
 - If auth expires, re-run `notebooklm login` on a trusted machine and refresh the secret value.
 - `NOTEBOOKLM_HOME` is optional, but recommended for reproducible CI jobs.
 
-## 💡 Usage Examples
+## Usage Examples: WeChat -> Podcast, YouTube -> Slides, PDF -> Quiz
 
 ### Scenario 1: Fast learning - article -> podcast
 
@@ -236,7 +260,7 @@ AI automatically:
 💡 Use case: Digital archiving for scanned files
 ```
 
-## 🎯 Core Features
+## Core Features
 
 ### 🧠 Smart source detection
 Automatically identifies input type, no manual flag required.
@@ -270,46 +294,26 @@ Sensitive data is processed locally first.
 WeChat article -> local MCP fetch -> local conversion -> NotebookLM
 ```
 
-## 📦 Technical Architecture
+## Technical Architecture
 
-```
-┌─────────────────────────────────────┐
-│     User natural-language input     │
-│ "Turn this article into podcast..." │
-└──────────────┬──────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────┐
-│         Claude Code Skill           │
-│  • Smart source-type detection      │
-│  • Automatic tool routing           │
-└──────────────┬──────────────────────┘
-               │
-      ┌────────┴────────┐
-      │                 │
-      ▼                 ▼
-┌──────────┐     ┌─────────────┐
-│ WeChat    │     │ Other formats│
-│ MCP fetch │     │ markitdown   │
-└─────┬────┘     └──────┬──────┘
-      │                 │
-      └────────┬────────┘
-               │
-               ▼
-┌─────────────────────────────────────┐
-│          NotebookLM API             │
-│  • Upload sources                   │
-│  • Generate target output           │
-└──────────────┬──────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────┐
-│          Generated files            │
-│      .mp3 / .pdf / .json / .md      │
-└─────────────────────────────────────┘
+```mermaid
+flowchart TD
+    userInput["User natural-language input<br/>Turn this article into a podcast"]
+    skillRouter["Claude Code Skill<br/>Smart source-type detection<br/>Automatic tool routing"]
+    wechatPath["WeChat path<br/>MCP fetch"]
+    formatPath["Other formats path<br/>markitdown conversion"]
+    notebooklmApi["NotebookLM API<br/>Upload sources and generate output"]
+    outputs["Generated files<br/>mp3 / pdf / json / md"]
+
+    userInput --> skillRouter
+    skillRouter --> wechatPath
+    skillRouter --> formatPath
+    wechatPath --> notebooklmApi
+    formatPath --> notebooklmApi
+    notebooklmApi --> outputs
 ```
 
-## 🔧 Advanced Usage
+## Advanced Usage
 
 ### Use an existing notebook
 
@@ -334,7 +338,7 @@ Turn all docs in this zip into podcasts /path/to/files.zip
 
 Automatic unzip, detect, convert, and merge.
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### MCP tool not found
 
@@ -366,7 +370,19 @@ python scripts/check_env.py       # full 13-item check
 
 PRs, issues, and suggestions are welcome.
 
-## ❓ FAQ
+## FAQ
+
+### FAQ: What languages are supported?
+NotebookLM supports multiple languages. In practice, English and Chinese currently perform best.
+
+### FAQ: Can I use this commercially?
+The skill repository is MIT licensed. For generated outputs, follow NotebookLM terms of service and the licensing/copyright rules of your source material.
+
+### FAQ: Why is MCP required for WeChat links?
+WeChat Official Account pages use anti-crawler protection, so MCP browser simulation is used for reliable fetching. Most other source types do not require MCP.
+
+### FAQ: What are typical content length limits?
+As a rule of thumb: minimum around 500 words, maximum around 500,000 words, with 1,000-10,000 words often giving better output quality.
 
 <details>
 <summary><b>Q: What languages are supported?</b></summary>

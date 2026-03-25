@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # anything-to-notebooklm Skill Installer
-# 自动安装所有依赖并配置环境
+# Automatically installs all dependencies and guides environment setup
 
-set -e  # 遇到错误立即退出
+set -e  # Exit immediately on error
 
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_NAME="anything-to-notebooklm"
 
-# 颜色输出
+# Color output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -16,95 +16,104 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}  多源内容 → NotebookLM 安装程序${NC}"
+echo -e "${BLUE}  Multi-Source -> NotebookLM Installer${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
-# 1. 检查 Python 版本
-echo -e "${YELLOW}[1/6] 检查 Python 环境...${NC}"
+# 1. Check Python version and detect package manager
+echo -e "${YELLOW}[1/6] Checking Python environment...${NC}"
 if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}❌ 未找到 Python3，请先安装 Python 3.9+${NC}"
+    echo -e "${RED}❌ Python3 not found. Please install Python 3.10+ first.${NC}"
     exit 1
 fi
 
 PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
-REQUIRED_VERSION="3.9"
+REQUIRED_VERSION="3.10"
 
 if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$PYTHON_VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
-    echo -e "${RED}❌ Python 版本过低（当前 $PYTHON_VERSION，需要 3.9+）${NC}"
+    echo -e "${RED}❌ Python version too low (current: $PYTHON_VERSION, required: 3.10+)${NC}"
     exit 1
 fi
 
 echo -e "${GREEN}✅ Python $PYTHON_VERSION${NC}"
 
-# 2. 检查并克隆 wexin-read-mcp
+# Prefer uv for faster, isolated installs; fall back to pip3
+if command -v uv &> /dev/null; then
+    INSTALLER="uv pip install"
+    echo -e "${GREEN}✅ uv detected — using uv for package installation${NC}"
+else
+    INSTALLER="pip3 install"
+    echo -e "${YELLOW}⚠️  uv not found — falling back to pip3 (consider: curl -LsSf https://astral.sh/uv/install.sh | sh)${NC}"
+fi
+
+# 2. Check and clone wexin-read-mcp
 echo ""
-echo -e "${YELLOW}[2/6] 安装 MCP 服务器...${NC}"
+echo -e "${YELLOW}[2/6] Installing MCP server...${NC}"
 MCP_DIR="$SKILL_DIR/wexin-read-mcp"
 
 if [ -d "$MCP_DIR" ]; then
-    echo -e "${GREEN}✅ MCP 服务器已存在${NC}"
+    echo -e "${GREEN}✅ MCP server already exists${NC}"
 else
-    echo "正在克隆 wexin-read-mcp..."
+    echo "Cloning wexin-read-mcp..."
     git clone https://github.com/Bwkyd/wexin-read-mcp.git "$MCP_DIR"
-    echo -e "${GREEN}✅ MCP 服务器克隆完成${NC}"
+    echo -e "${GREEN}✅ MCP server cloned successfully${NC}"
 fi
 
-# 3. 安装 Python 依赖
+# 3. Install Python dependencies
 echo ""
-echo -e "${YELLOW}[3/6] 安装 Python 依赖...${NC}"
+echo -e "${YELLOW}[3/6] Installing Python dependencies...${NC}"
 
-# 安装 MCP 服务器依赖
+# Install MCP server dependencies
 if [ -f "$MCP_DIR/requirements.txt" ]; then
-    echo "安装 MCP 依赖..."
-    pip3 install -r "$MCP_DIR/requirements.txt" -q
-    echo -e "${GREEN}✅ MCP 依赖安装完成${NC}"
+    echo "Installing MCP dependencies..."
+    $INSTALLER -r "$MCP_DIR/requirements.txt" -q
+    echo -e "${GREEN}✅ MCP dependencies installed${NC}"
 fi
 
-# 安装 Skill 依赖（包括 markitdown）
+# Install Skill dependencies (including markitdown)
 if [ -f "$SKILL_DIR/requirements.txt" ]; then
-    echo "安装 Skill 依赖（包括 markitdown 文件转换工具）..."
-    pip3 install -r "$SKILL_DIR/requirements.txt" -q
-    echo -e "${GREEN}✅ Skill 依赖安装完成${NC}"
-    echo -e "${GREEN}✅ markitdown 已安装（支持 15+ 文件格式转换）${NC}"
+    echo "Installing Skill dependencies (including markitdown converter)..."
+    $INSTALLER -r "$SKILL_DIR/requirements.txt" -q
+    echo -e "${GREEN}✅ Skill dependencies installed${NC}"
+    echo -e "${GREEN}✅ markitdown installed (supports 15+ file formats)${NC}"
 fi
 
-# 4. 安装 Playwright 浏览器
+# 4. Install Playwright browser
 echo ""
-echo -e "${YELLOW}[4/6] 安装 Playwright 浏览器...${NC}"
-echo "这可能需要几分钟，请耐心等待..."
+echo -e "${YELLOW}[4/6] Installing Playwright browser...${NC}"
+echo "This may take a few minutes. Please wait..."
 
 if python3 -c "from playwright.sync_api import sync_playwright" 2>/dev/null; then
     playwright install chromium
-    echo -e "${GREEN}✅ Playwright 浏览器安装完成${NC}"
+    echo -e "${GREEN}✅ Playwright browser installed${NC}"
 else
-    echo -e "${RED}❌ Playwright 导入失败，请检查安装${NC}"
+    echo -e "${RED}❌ Playwright import failed. Please check installation.${NC}"
     exit 1
 fi
 
-# 5. 检查并安装 notebooklm
+# 5. Check and install notebooklm
 echo ""
-echo -e "${YELLOW}[5/6] 检查 NotebookLM CLI...${NC}"
+echo -e "${YELLOW}[5/6] Checking NotebookLM CLI...${NC}"
 
 if command -v notebooklm &> /dev/null; then
     NOTEBOOKLM_VERSION=$(notebooklm --version 2>/dev/null || echo "unknown")
-    echo -e "${GREEN}✅ NotebookLM CLI 已安装 ($NOTEBOOKLM_VERSION)${NC}"
+    echo -e "${GREEN}✅ NotebookLM CLI installed ($NOTEBOOKLM_VERSION)${NC}"
 else
-    echo "正在安装 notebooklm-py..."
-    pip3 install git+https://github.com/teng-lin/notebooklm-py.git -q
+    echo "Installing notebooklm-py..."
+    $INSTALLER notebooklm-py -q
 
     if command -v notebooklm &> /dev/null; then
-        echo -e "${GREEN}✅ NotebookLM CLI 安装完成${NC}"
+        echo -e "${GREEN}✅ NotebookLM CLI installed successfully${NC}"
     else
-        echo -e "${RED}❌ NotebookLM CLI 安装失败${NC}"
-        echo "请手动安装：pip3 install git+https://github.com/teng-lin/notebooklm-py.git"
+        echo -e "${RED}❌ NotebookLM CLI installation failed${NC}"
+        echo "Install manually: uv pip install notebooklm-py   (or: pip install notebooklm-py)"
         exit 1
     fi
 fi
 
-# 6. 配置指导
+# 6. Configuration guidance
 echo ""
-echo -e "${YELLOW}[6/6] 配置指导${NC}"
+echo -e "${YELLOW}[6/6] Configuration guide${NC}"
 echo ""
 
 CLAUDE_CONFIG="$HOME/.claude/config.json"
@@ -115,14 +124,14 @@ CONFIG_SNIPPET="    \"weixin-reader\": {
       ]
     }"
 
-echo -e "${BLUE}📝 下一步：配置 MCP 服务器${NC}"
+echo -e "${BLUE}📝 Next step: Configure MCP server${NC}"
 echo ""
-echo "请编辑 $CLAUDE_CONFIG"
+echo "Edit: $CLAUDE_CONFIG"
 echo ""
-echo "在 \"mcpServers\" 中添加："
+echo "Add this under \"mcpServers\":"
 echo -e "${GREEN}$CONFIG_SNIPPET${NC}"
 echo ""
-echo "完整配置示例："
+echo "Full config example:"
 echo -e "${GREEN}{
   \"primaryApiKey\": \"any\",
   \"mcpServers\": {
@@ -131,37 +140,37 @@ $CONFIG_SNIPPET
 }${NC}"
 echo ""
 
-# 检查是否已配置
+# Check if already configured
 if [ -f "$CLAUDE_CONFIG" ]; then
     if grep -q "weixin-reader" "$CLAUDE_CONFIG"; then
-        echo -e "${GREEN}✅ 检测到已有 weixin-reader 配置${NC}"
+        echo -e "${GREEN}✅ Existing weixin-reader config detected${NC}"
     else
-        echo -e "${YELLOW}⚠️  未检测到 weixin-reader 配置，请手动添加${NC}"
+        echo -e "${YELLOW}⚠️  weixin-reader config not found. Please add it manually.${NC}"
     fi
 else
-    echo -e "${YELLOW}⚠️  未找到 Claude 配置文件，请手动创建${NC}"
+    echo -e "${YELLOW}⚠️  Claude config file not found. Please create it manually.${NC}"
 fi
 
 echo ""
-echo -e "${BLUE}🔐 NotebookLM 认证${NC}"
+echo -e "${BLUE}🔐 NotebookLM Authentication${NC}"
 echo ""
-echo "首次使用前，请运行："
+echo "Before first use, run:"
 echo -e "${GREEN}  notebooklm login${NC}"
-echo -e "${GREEN}  notebooklm list  # 验证认证成功${NC}"
+echo -e "${GREEN}  notebooklm list  # verify authentication success${NC}"
 echo ""
 
-# 最终检查
+# Final summary
 echo ""
 echo -e "${BLUE}========================================${NC}"
-echo -e "${GREEN}✅ 安装完成！${NC}"
+echo -e "${GREEN}✅ Installation complete!${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
-echo "📦 安装位置：$SKILL_DIR"
+echo "📦 Install path: $SKILL_DIR"
 echo ""
-echo "⚠️  重要提醒："
-echo "  1. 配置 MCP 服务器后需要重启 Claude Code"
-echo "  2. 首次使用前运行 notebooklm login"
+echo "⚠️  Important reminders:"
+echo "  1. Restart Claude Code after MCP server configuration"
+echo "  2. Run notebooklm login before first use"
 echo ""
-echo "🚀 使用示例："
-echo "  把这篇文章生成播客 https://mp.weixin.qq.com/s/xxx"
+echo "🚀 Usage example:"
+echo "  Turn this article into a podcast https://mp.weixin.qq.com/s/xxx"
 echo ""

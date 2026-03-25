@@ -8,4 +8,4 @@ lxml>=4.9.0
 markitdown[all]>=0.0.1
 
 # NotebookLM (will be installed from PyPI if available, or from git)
-# notebooklm-py
+notebooklm-py

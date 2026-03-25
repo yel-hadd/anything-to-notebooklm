@@ -137,6 +137,30 @@ notebooklm list  # verify success
 python scripts/check_env.py
 ```
 
+### CI/headless usage (`NOTEBOOKLM_AUTH_JSON`, `NOTEBOOKLM_HOME`)
+
+Use these when running in CI/CD, containers, or remote environments where interactive browser login is not possible.
+
+- `NOTEBOOKLM_AUTH_JSON`: pass NotebookLM auth cookies as inline JSON so the CLI can authenticate without reading/writing `~/.notebooklm/storage_state.json`.
+- `NOTEBOOKLM_HOME`: set a custom working directory for NotebookLM state files (`context.json`, browser profile, etc.) when `$HOME` is ephemeral or restricted.
+
+```bash
+# 1) Export auth JSON from a previously authenticated machine/session
+export NOTEBOOKLM_AUTH_JSON='{"cookies": {...}}'
+
+# 2) (Optional) isolate all NotebookLM runtime files to a writable path
+export NOTEBOOKLM_HOME=/workspace/.notebooklm
+
+# 3) Run commands non-interactively
+notebooklm list
+notebooklm create "CI Run Notebook" --json
+```
+
+Notes:
+- Keep `NOTEBOOKLM_AUTH_JSON` in your secret manager (never commit it).
+- If auth expires, re-run `notebooklm login` on a trusted machine and refresh the secret value.
+- `NOTEBOOKLM_HOME` is optional, but recommended for reproducible CI jobs.
+
 ## 💡 Usage Examples
 
 ### Scenario 1: Fast learning - article -> podcast
